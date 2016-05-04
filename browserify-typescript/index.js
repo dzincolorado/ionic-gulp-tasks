@@ -8,7 +8,9 @@ var gulp = require('gulp'),
     buffer = require('vinyl-buffer'),
     sourcemaps = require('gulp-sourcemaps'),
     uglify = require('gulp-uglify'),
-    stream = require('stream');
+    stream = require('stream'),
+    gulpReplace = require('gulp-replace'),
+    gulpDebug = require("gulp-debug");
 
 var defaultOptions = {
   watch: false,
@@ -16,6 +18,7 @@ var defaultOptions = {
   outputPath: 'www/build/js/',
   outputFile: 'app.bundle.js',
   minify: false,
+  removeStrict: true,
   browserifyOptions: {
     cache: {},
     packageCache: {},
@@ -50,13 +53,16 @@ module.exports = function(options) {
   function bundle() {
     var debug = options.browserifyOptions.debug;
     return b.bundle()
-      .on('error', options.onError)
-      .pipe(source(options.outputFile))
-      .pipe(buffer())
-      .pipe(debug ? sourcemaps.init({ loadMaps: true }) : noop())
-      .pipe(options.minify ? uglify(options.uglifyOptions) : noop())
-      .pipe(debug ? sourcemaps.write('./') : noop())
-      .pipe(gulp.dest(options.outputPath));
+        .on('error', options.onError)
+        .pipe(source(options.outputFile))
+        .pipe(buffer())
+        .pipe(debug ? sourcemaps.init({loadMaps: true}) : noop())
+        .pipe(options.minify ? uglify(options.uglifyOptions) : noop())
+        .pipe(debug ? sourcemaps.write('./') : noop())
+        .pipe(options.removeStrict ? gulpReplace(/"use strict";/g, ''): noop())
+        .pipe(options.removeStrict ? gulpReplace(/'use strict';/g, ''): noop())
+        .pipe(gulpDebug({title: "Bundle"}))
+        .pipe(gulp.dest(options.outputPath));
   }
 
   function noop(){
